@@ -916,13 +916,13 @@ function update(dt) {
     const maxTilt = 0.25; // ~14 degrees
     sk.tilt = Math.min(sk.timer * 0.06, maxTilt);
 
-    // Sink: accelerating downward
-    const sinkSpeed = sk.timer < 1.5 ? 8 : 8 + (sk.timer - 1.5) * 25;
+    // Sink: accelerating downward (moderate pace so ship stays visible)
+    const sinkSpeed = sk.timer < 1.5 ? 5 : 5 + (sk.timer - 1.5) * 14;
     sk.yOffset += sinkSpeed * dt;
 
-    // Fade near the end
+    // Fade near the end — keep minimum visible for gameover background
     if (sk.timer > 3.5) {
-      sk.opacity = Math.max(0.08, 1.0 - (sk.timer - 3.5) / 1.5);
+      sk.opacity = Math.max(0.15, 1.0 - (sk.timer - 3.5) / 1.5);
     }
 
     // Fire particles during burn phase
@@ -993,6 +993,7 @@ function update(dt) {
     // Transition to gameover
     if (sk.timer >= sk.duration) {
       G.phase = 'gameover';
+      G.announce = null; // clear sinking announce
       // Keep sink data for background rendering
     }
   }
