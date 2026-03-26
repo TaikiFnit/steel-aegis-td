@@ -59,6 +59,7 @@ canvas.addEventListener('pointerdown', e => {
   pointers.set(e.pointerId, { x: e.clientX, y: e.clientY, startTime: Date.now() });
   if (!audioCtx) initAudio();
   if (G.phase === 'title') { startGame(); return; }
+  if (G.phase === 'sinking') return; // block input during sinking
   if (G.phase === 'gameover') { resetGame(); return; }
 });
 canvas.addEventListener('pointermove', e => {
@@ -417,7 +418,7 @@ const ENEMY_DEFS = {
 
 // ─── GAME STATE ─────────────────────────────────────────
 const G = {
-  phase: 'title', // title | playing | building | gameover
+  phase: 'title', // title | playing | building | sinking | gameover
   time: 0,
   wave: 0,
   score: 0,
@@ -840,35 +841,160 @@ function startWave(idx) {
 // ─── MAIN UPDATE ────────────────────────────────────────
 function update(dt) {
   G.time += dt;
-  if (G.phase === 'title' || G.phase === 'gameover') return;
+  if (G.phase === 'title') return;
+  // During gameover, only update particles (smoke/fire continues behind overlay)
+  if (G.phase === 'gameover') {
+    updateParticles(dt);
+    return;
+  }
   if (G.phase === 'building') {
     updateScraps(dt);
     updateParticles(dt); updateShake();
     return;
   }
 
-  // === PLAYING ===
-  updateSpawns(dt);
-  updateEnemyAI(dt);
-  updateTurretAiming(dt);
-  updateTurretFiring(dt);
-  updateBullets(dt);
+  // === PLAYING / SINKING ===
+  const isSinking = G.phase === 'sinking';
+  if (!isSinking) {
+    updateSpawns(dt);
+    updateEnemyAI(dt);
+    updateTurretAiming(dt);
+    updateTurretFiring(dt);
+    updateBullets(dt);
+  }
   updateTorpedoes(dt);
   updateScraps(dt);
   updateParticles(dt);
   updateShake();
   if (G.dmgFlash > 0) G.dmgFlash -= dt;
 
-  // Check ship death
+  // Check ship death — enter sinking phase
   if (G.ship.hp <= 0 && G.phase === 'playing') {
-    G.phase = 'gameover';
-    addShake(12);
+    G.phase = 'sinking';
+    G.sink = {
+      timer: 0,           // seconds since death
+      duration: 5.0,      // total sinking time before game over
+      tilt: 0,            // roll angle (radians)
+      yOffset: 0,         // how far ship has sunk
+      opacity: 1.0,       // ship fade
+      fireTimer: 0,       // fire particle timer
+      smokeTimer: 0,      // smoke particle timer
+      bubbleTimer: 0,     // bubble timer
+      phase: 'explode',   // explode -> burn -> submerge
+    };
+    addShake(15);
     sfx('explode');
-    emitP(G.ship.x, G.ship.y, 120, {
+    G.announce = { text: '✦ 大 破 ✦', timer: 2.5 };
+    // Big initial explosion
+    emitP(G.ship.x, G.ship.y, 150, {
       colors: ['#ff4444', '#ff8844', '#ffcc44', '#333', '#111'],
       spdMin: 40, spdMax: 400, szMin: 3, szMax: 14,
       lifeMin: 0.5, lifeMax: 2.5, type: 'debris',
     });
+    emitP(G.ship.x, G.ship.y, 60, {
+      colors: ['#ffcc44', '#fff', '#ff8844'],
+      spdMin: 80, spdMax: 300, szMin: 2, szMax: 6,
+      lifeMin: 0.2, lifeMax: 0.8, type: 'spark',
+    });
+  }
+
+  // Sinking phase update
+  if (G.phase === 'sinking' && G.sink) {
+    const sk = G.sink;
+    sk.timer += dt;
+
+    // Phase transitions
+    if (sk.timer < 1.0) {
+      sk.phase = 'explode';
+    } else if (sk.timer < 3.0) {
+      sk.phase = 'burn';
+    } else {
+      sk.phase = 'submerge';
+    }
+
+    // Tilt: slowly roll to starboard
+    const maxTilt = 0.25; // ~14 degrees
+    sk.tilt = Math.min(sk.timer * 0.06, maxTilt);
+
+    // Sink: accelerating downward
+    const sinkSpeed = sk.timer < 1.5 ? 8 : 8 + (sk.timer - 1.5) * 25;
+    sk.yOffset += sinkSpeed * dt;
+
+    // Fade near the end
+    if (sk.timer > 3.5) {
+      sk.opacity = Math.max(0.08, 1.0 - (sk.timer - 3.5) / 1.5);
+    }
+
+    // Fire particles during burn phase
+    sk.fireTimer += dt;
+    if (sk.phase === 'explode' || sk.phase === 'burn') {
+      if (sk.fireTimer > 0.06) {
+        sk.fireTimer = 0;
+        const fx = G.ship.x + rand(-40, 30);
+        const fy = G.ship.y + sk.yOffset + rand(-12, 8);
+        emitP(fx, fy, rand(3, 8), {
+          colors: ['#ff6622', '#ff9944', '#ffcc44'],
+          spdMin: 15, spdMax: 60, szMin: 2, szMax: 6,
+          lifeMin: 0.3, lifeMax: 0.9, type: 'spark', gravity: -40,
+        });
+      }
+    }
+
+    // Smoke
+    sk.smokeTimer += dt;
+    if (sk.smokeTimer > 0.1) {
+      sk.smokeTimer = 0;
+      const sx2 = G.ship.x + rand(-35, 25);
+      const sy2 = G.ship.y + sk.yOffset + rand(-10, 5);
+      emitP(sx2, sy2, rand(2, 5), {
+        colors: ['#222', '#444', '#333'],
+        spdMin: 10, spdMax: 40, szMin: 4, szMax: 12,
+        lifeMin: 0.8, lifeMax: 2.5, gravity: -20,
+      });
+    }
+
+    // Bubbles during submerge
+    if (sk.phase === 'submerge') {
+      sk.bubbleTimer += dt;
+      if (sk.bubbleTimer > 0.08) {
+        sk.bubbleTimer = 0;
+        const bx = G.ship.x + rand(-50, 40);
+        const bubbleY = G.ship.y + sk.yOffset + rand(-5, 15);
+        emitP(bx, bubbleY, rand(1, 4), {
+          colors: ['rgba(120,180,220,0.5)', 'rgba(150,200,240,0.3)'],
+          spdMin: 15, spdMax: 50, szMin: 2, szMax: 7,
+          lifeMin: 0.4, lifeMax: 1.2, gravity: -60,
+        });
+      }
+      // Waterline foam — splash at the ship's original Y (surface)
+      if (Math.random() < 0.3) {
+        const foamX = G.ship.x + rand(-55, 45);
+        emitP(foamX, G.ship.y, rand(2, 5), {
+          colors: ['rgba(180,220,255,0.4)', 'rgba(200,240,255,0.25)', 'rgba(140,190,230,0.3)'],
+          spdMin: 8, spdMax: 35, szMin: 2, szMax: 5,
+          lifeMin: 0.3, lifeMax: 0.8, gravity: -15,
+        });
+      }
+    }
+
+    // Secondary explosions during explode phase
+    if (sk.phase === 'explode' && Math.random() < 0.15) {
+      const ex = G.ship.x + rand(-45, 35);
+      const ey = G.ship.y + sk.yOffset + rand(-15, 15);
+      emitP(ex, ey, rand(10, 25), {
+        colors: ['#ff4444', '#ff8844', '#ffcc44'],
+        spdMin: 30, spdMax: 150, szMin: 2, szMax: 8,
+        lifeMin: 0.2, lifeMax: 0.7, type: 'spark',
+      });
+      addShake(rand(2, 5));
+      sfx('explode');
+    }
+
+    // Transition to gameover
+    if (sk.timer >= sk.duration) {
+      G.phase = 'gameover';
+      // Keep sink data for background rendering
+    }
   }
 
   // Check wave complete
@@ -1652,14 +1778,27 @@ function renderOcean() {
 
 function renderShip() {
   const s = G.ship;
-  ctx.save();
-  ctx.translate(s.x, s.y);
+  const sk = G.sink;
+  const sinking = (G.phase === 'sinking' || G.phase === 'gameover') && sk;
 
-  // Wake
-  ctx.fillStyle = 'rgba(150,200,255,0.025)';
-  for (let i = 0; i < 5; i++) {
-    const off = -i * 22 - 60, sp = 10 + i * 6;
-    ctx.beginPath(); ctx.moveTo(off, 0); ctx.lineTo(off - 28, -sp); ctx.lineTo(off - 28, sp); ctx.closePath(); ctx.fill();
+  ctx.save();
+
+  // Sinking transformations
+  if (sinking) {
+    ctx.globalAlpha = sk.opacity;
+    ctx.translate(s.x, s.y + sk.yOffset);
+    ctx.rotate(sk.tilt);
+  } else {
+    ctx.translate(s.x, s.y);
+  }
+
+  // Wake (hide when sinking)
+  if (!sinking) {
+    ctx.fillStyle = 'rgba(150,200,255,0.025)';
+    for (let i = 0; i < 5; i++) {
+      const off = -i * 22 - 60, sp = 10 + i * 6;
+      ctx.beginPath(); ctx.moveTo(off, 0); ctx.lineTo(off - 28, -sp); ctx.lineTo(off - 28, sp); ctx.closePath(); ctx.fill();
+    }
   }
 
   // Hull shadow
@@ -1678,10 +1817,16 @@ function renderShip() {
   ctx.fillStyle = '#5a6a7e'; ctx.fillRect(-10, -6, 20, 12);
   ctx.fillStyle = '#6a7a8e'; ctx.fillRect(-8, -5, 16, 10);
 
-  // Reactor pulse
-  const rp = 0.5 + Math.sin(G.time * 3) * 0.2;
-  ctx.fillStyle = `rgba(74,240,192,${rp * 0.25})`; ctx.beginPath(); ctx.arc(0, 0, 8, 0, TAU); ctx.fill();
-  ctx.fillStyle = `rgba(74,240,192,${rp * 0.5})`; ctx.beginPath(); ctx.arc(0, 0, 4, 0, TAU); ctx.fill();
+  // Reactor pulse (disabled when sinking)
+  if (!sinking) {
+    const rp = 0.5 + Math.sin(G.time * 3) * 0.2;
+    ctx.fillStyle = `rgba(74,240,192,${rp * 0.25})`; ctx.beginPath(); ctx.arc(0, 0, 8, 0, TAU); ctx.fill();
+    ctx.fillStyle = `rgba(74,240,192,${rp * 0.5})`; ctx.beginPath(); ctx.arc(0, 0, 4, 0, TAU); ctx.fill();
+  } else {
+    // Dead reactor — dim red glow
+    const rp2 = 0.2 + Math.sin(G.time * 1.5) * 0.1;
+    ctx.fillStyle = `rgba(255,60,30,${rp2 * 0.15})`; ctx.beginPath(); ctx.arc(0, 0, 6, 0, TAU); ctx.fill();
+  }
 
   // Turrets
   for (const slot of s.slots) {
@@ -1698,9 +1843,18 @@ function renderShip() {
     }
     renderTurret(slot);
   }
+
+  // Underwater wash overlay — darkening tint simulating submersion
+  if (sinking && sk.phase === 'submerge') {
+    const submergeAlpha = clamp((sk.timer - 3.0) / 2.0, 0, 0.4);
+    ctx.fillStyle = `rgba(10,25,50,${submergeAlpha})`;
+    ctx.fillRect(-s.w, -s.h, s.w * 2, s.h * 2);
+  }
+
   ctx.restore();
 
-  // Ship HP bar
+  // Ship HP bar (hide when sinking)
+  if (sinking) return; // skip HP bar when sinking
   const bw = 90, bh = 5, bx = s.x - bw / 2, by = s.y - s.h / 2 - 18;
   const hp = clamp(s.hp / s.maxHp, 0, 1);
   ctx.fillStyle = 'rgba(0,0,0,0.4)'; rr(ctx, bx, by, bw, bh, 2); ctx.fill();
@@ -2068,7 +2222,7 @@ function renderScraps() {
 }
 
 function renderHUD() {
-  if (G.phase === 'title' || G.phase === 'gameover') return;
+  if (G.phase === 'title' || G.phase === 'gameover' || G.phase === 'sinking') return;
   ctx.save();
   const mobile = W < 600;
   // Top bar
@@ -2733,18 +2887,26 @@ function renderTitle() {
 
 function renderGameOver() {
   ctx.save();
-  ctx.fillStyle = 'rgba(5,10,20,0.8)'; ctx.fillRect(0, 0, W, H);
+  // Semi-transparent overlay so sinking ship shows through
+  ctx.fillStyle = 'rgba(5,10,20,0.55)'; ctx.fillRect(0, 0, W, H);
+  // Vignette — darker at edges, lighter in center where ship is
+  const vig = ctx.createRadialGradient(CX, CY + 40, 50, CX, CY + 40, Math.max(W, H) * 0.6);
+  vig.addColorStop(0, 'rgba(5,10,20,0)');
+  vig.addColorStop(1, 'rgba(5,10,20,0.35)');
+  ctx.fillStyle = vig; ctx.fillRect(0, 0, W, H);
+
   ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-  ctx.shadowColor = 'rgba(255,68,102,0.5)'; ctx.shadowBlur = 30;
-  ctx.font = "800 52px 'Cabinet Grotesk',sans-serif"; ctx.fillStyle = '#ff4466';
-  ctx.fillText('SUNK', CX, CY - 55); ctx.shadowBlur = 0;
+  // SUNK title — positioned higher so ship sinking area is visible
+  ctx.shadowColor = 'rgba(255,68,102,0.6)'; ctx.shadowBlur = 40;
+  ctx.font = "800 56px 'Cabinet Grotesk',sans-serif"; ctx.fillStyle = '#ff4466';
+  ctx.fillText('SUNK', CX, CY - 80); ctx.shadowBlur = 0;
   ctx.font = "500 17px 'Satoshi',sans-serif"; ctx.fillStyle = '#aabbcc';
-  ctx.fillText(`Wave ${G.wave + 1} まで到達`, CX, CY - 5);
-  ctx.fillText(`スコア: ${G.score}  撃墜: ${G.kills}`, CX, CY + 25);
+  ctx.fillText(`Wave ${G.wave + 1} まで到達`, CX, CY - 30);
+  ctx.fillText(`スコア: ${G.score}  撃墜: ${G.kills}`, CX, CY);
   const pulse = 0.6 + Math.sin(G.time * 3) * 0.4;
   ctx.font = "700 18px 'Cabinet Grotesk',sans-serif";
   ctx.fillStyle = `rgba(255,255,255,${pulse})`;
-  ctx.fillText('TAP TO RETRY', CX, CY + 85);
+  ctx.fillText('TAP TO RETRY', CX, CY + 60);
   ctx.restore();
 }
 
@@ -2814,6 +2976,7 @@ function resetGame() {
   G.enemies = []; G.bullets = []; G.scraps = []; G.torpedoes = [];
   G.spawnQueues = []; G.notifications = [];
   G.dmgFlash = 0; shakeAmt = 0;
+  G.sink = null; G.announce = null;
   particles.length = 0;
   G.ship.hp = G.ship.maxHp;
   G.res = { iron: 10, gunpowder: 5, electronics: 1, brass: 1 };
@@ -2848,12 +3011,19 @@ window.render_game_to_text = () => JSON.stringify({
   shipHp: G.ship.hp, enemies: G.enemies.length,
   bullets: G.bullets.length, torpedoes: G.torpedoes.length,
   scraps: G.scraps.length, resources: G.res,
+  sink: G.sink ? { timer: G.sink.timer.toFixed(2), phase: G.sink.phase, yOffset: G.sink.yOffset.toFixed(1) } : null,
   turrets: G.ship.slots.filter(s => s.turret).map(s => ({
     type: s.turret.type, slot: s.id, level: s.turret.level,
     angle: (s.turret.angle / DEG).toFixed(0) + '°',
   })),
   pointers: pointers.size,
 });
+// Test hook: force sinking animation for QA
+window.testSinking = () => {
+  if (G.phase !== 'playing' && G.phase !== 'building') return;
+  G.ship.hp = 0;
+  G.phase = 'playing'; // ensure death check triggers
+};
 
 // Mute
 addEventListener('keydown', e => {
