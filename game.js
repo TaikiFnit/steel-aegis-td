@@ -643,11 +643,11 @@ function applyDamageToEnemy(e, dmg) {
         spdMin: 80, spdMax: 250, szMin: 3, szMax: 8,
         lifeMin: 0.3, lifeMax: 0.8, type: 'spark',
       });
-      // Announce
+      // Announce — no phase labels, just short feedback
       if (e.shieldIdx < e.shields.length) {
-        G.announce = { text: `◆ SHIELD BREAK — ${e.shields[e.shieldIdx].label}`, timer: 2.0 };
+        G.announce = { text: '◆ SHIELD BREAK', timer: 1.5 };
       } else {
-        G.announce = { text: '☢ SHIELD DOWN — CORE EXPOSED', timer: 2.5 };
+        G.announce = { text: '☢ CORE EXPOSED', timer: 2.0 };
       }
     }
   }
@@ -753,7 +753,7 @@ function genWaves() {
     // W4: fast drone swarm
     { groups: [{ type: 'fastDrone', count: 12, interval: 0.8 }] },
     // W5: BOSS + escorts
-    { groups: [{ type: 'boss', count: 2, interval: 3.0 }, { type: 'scoutDrone', count: 6, interval: 1.5 }] },
+    { groups: [{ type: 'boss', count: 1, interval: 3.0 }, { type: 'scoutDrone', count: 6, interval: 1.5 }] },
     // W6: bombers intro — more scouts flooding in
     { groups: [{ type: 'fastDrone', count: 14, interval: 0.7 }, { type: 'bomber', count: 4, interval: 3.0 }, { type: 'scoutDrone', count: 8, interval: 0.9 }] },
     // W7: heavy drones + scout swarm
@@ -763,7 +763,7 @@ function genWaves() {
     // W9: everything ramp — dense
     { groups: [{ type: 'fastDrone', count: 18, interval: 0.4 }, { type: 'heavyDrone', count: 5, interval: 2.5 }, { type: 'bomber', count: 5, interval: 2.0 }, { type: 'scoutDrone', count: 12, interval: 0.5 }] },
     // W10: BOSS + heavy escorts
-    { groups: [{ type: 'boss', count: 2, interval: 3.0 }, { type: 'heavyDrone', count: 5, interval: 2.5 }, { type: 'bomber', count: 5, interval: 2.0 }, { type: 'scoutDrone', count: 10, interval: 0.6 }] },
+    { groups: [{ type: 'boss', count: 1, interval: 3.0 }, { type: 'heavyDrone', count: 5, interval: 2.5 }, { type: 'bomber', count: 5, interval: 2.0 }, { type: 'scoutDrone', count: 10, interval: 0.6 }] },
     // W11: stealth swarm + orbit wall
     { groups: [{ type: 'stealthDrone', count: 12, interval: 1.0 }, { type: 'fastDrone', count: 10, interval: 0.8 }, { type: 'scoutDrone', count: 14, interval: 0.5 }] },
     // W12: bomber wave + scout flood
@@ -773,7 +773,7 @@ function genWaves() {
     // W14: everything dense
     { groups: [{ type: 'scoutDrone', count: 22, interval: 0.3 }, { type: 'bomber', count: 8, interval: 1.5 }, { type: 'heavyDrone', count: 5, interval: 2.5 }] },
     // W15: BOSS + full mix
-    { groups: [{ type: 'boss', count: 2, interval: 3.0 }, { type: 'fastDrone', count: 15, interval: 0.5 }, { type: 'bomber', count: 7, interval: 2.0 }, { type: 'stealthDrone', count: 6, interval: 2.5 }, { type: 'scoutDrone', count: 10, interval: 0.6 }] },
+    { groups: [{ type: 'boss', count: 1, interval: 3.0 }, { type: 'fastDrone', count: 15, interval: 0.5 }, { type: 'bomber', count: 7, interval: 2.0 }, { type: 'stealthDrone', count: 6, interval: 2.5 }, { type: 'scoutDrone', count: 10, interval: 0.6 }] },
     // W16: fast chaos
     { groups: [{ type: 'fastDrone', count: 25, interval: 0.3 }, { type: 'bomber', count: 5, interval: 3.0 }, { type: 'scoutDrone', count: 15, interval: 0.4 }] },
     // W17: stealth bombers
@@ -783,7 +783,7 @@ function genWaves() {
     // W19: calm before storm — scout flood
     { groups: [{ type: 'scoutDrone', count: 30, interval: 0.2 }, { type: 'stealthDrone', count: 10, interval: 1.2 }] },
     // W20: BOSS + jammer-resist debut!
-    { groups: [{ type: 'boss', count: 2, interval: 3.0 }, { type: 'scoutDrone_jr', count: 10, interval: 1.5 }, { type: 'fastDrone_jr', count: 6, interval: 2.0 }, { type: 'bomber', count: 6, interval: 2.5 }, { type: 'scoutDrone', count: 12, interval: 0.5 }] },
+    { groups: [{ type: 'boss', count: 1, interval: 3.0 }, { type: 'scoutDrone_jr', count: 10, interval: 1.5 }, { type: 'fastDrone_jr', count: 6, interval: 2.0 }, { type: 'bomber', count: 6, interval: 2.5 }, { type: 'scoutDrone', count: 12, interval: 0.5 }] },
     // W21: jammer-resist scouts mix
     { groups: [{ type: 'scoutDrone_jr', count: 14, interval: 0.7 }, { type: 'scoutDrone', count: 16, interval: 0.5 }, { type: 'fastDrone', count: 8, interval: 1.0 }] },
     // W22: fast JR rush
@@ -793,7 +793,7 @@ function genWaves() {
     // W24: bomber JR assault
     { groups: [{ type: 'bomber_jr', count: 8, interval: 1.5 }, { type: 'fastDrone_jr', count: 12, interval: 0.6 }, { type: 'stealthDrone', count: 8, interval: 1.2 }, { type: 'scoutDrone', count: 12, interval: 0.5 }] },
     // W25: BOSS + JR full mix
-    { groups: [{ type: 'boss', count: 2, interval: 3.0 }, { type: 'scoutDrone_jr', count: 12, interval: 0.8 }, { type: 'bomber_jr', count: 6, interval: 2.0 }, { type: 'heavyDrone_jr', count: 5, interval: 2.5 }, { type: 'fastDrone_jr', count: 8, interval: 0.8 }] },
+    { groups: [{ type: 'boss', count: 1, interval: 3.0 }, { type: 'scoutDrone_jr', count: 12, interval: 0.8 }, { type: 'bomber_jr', count: 6, interval: 2.0 }, { type: 'heavyDrone_jr', count: 5, interval: 2.5 }, { type: 'fastDrone_jr', count: 8, interval: 0.8 }] },
     // W26+: late-game templates (cycle with scaling)
     { groups: [{ type: 'fastDrone_jr', count: 20, interval: 0.4 }, { type: 'bomber_jr', count: 10, interval: 1.2 }, { type: 'heavyDrone', count: 8, interval: 2.0 }, { type: 'scoutDrone', count: 15, interval: 0.4 }] },
     { groups: [{ type: 'scoutDrone_jr', count: 20, interval: 0.3 }, { type: 'stealthDrone', count: 14, interval: 0.8 }, { type: 'bomber', count: 8, interval: 1.5 }, { type: 'heavyDrone_jr', count: 5, interval: 2.5 }] },
@@ -818,7 +818,7 @@ function startWave(idx) {
   const waveNum = idx + 1; // 1-indexed for display
   const isBossWave = waveNum % 5 === 0 && waveNum > 0;
   if (isBossWave && !groups.some(g => g.type === 'boss')) {
-    groups.unshift({ type: 'boss', count: 2, interval: 3.0 });
+    groups.unshift({ type: 'boss', count: 1, interval: 3.0 });
   }
 
   for (const g of groups) {
@@ -1886,109 +1886,83 @@ function renderEnemies() {
 
     ctx.restore();
 
-    // HP bar for tough enemies / boss multi-phase bar
+    // HP bar for tough enemies / boss stacked single bar
     if (e.isBoss && e.shields) {
-      // ── Boss multi-phase HP bar (blue→green→yellow→core) ──
-      const bw = e.size * 3.5;
-      const layerH = 4;
-      const gap = 1;
-      const totalLayers = e.shields.length + 1; // shields + core
-      const totalH = totalLayers * layerH + (totalLayers - 1) * gap;
+      // ── Boss single stacked HP bar ──
+      // One bar. Each layer covers the full bar width. Layers are painted
+      // back-to-front: core(red) → shield2(yellow) → shield1(green) → shield0(blue).
+      // A layer's visible width = (its remaining HP / its maxHP) * barWidth.
+      // When shield0 (blue) is at 60%, you see blue covering 60% and green
+      // peeking out for the remaining 40%. When blue is gone, the full green bar
+      // is revealed underneath.
+      const bw = e.size * 3;
+      const bh = 5;
       const bx = e.x - bw / 2;
-      const topY = e.y - e.size - totalH - 10;
+      const by = e.y - e.size - 14;
 
-      // Phase break flash overlay
+      // Phase break flash
       if (e.phaseBreakFlash > 0) {
         ctx.save();
-        ctx.globalAlpha = e.phaseBreakFlash * 0.6;
+        ctx.globalAlpha = e.phaseBreakFlash * 0.5;
         ctx.fillStyle = '#ffffff';
-        ctx.fillRect(bx - 2, topY - 2, bw + 4, totalH + 4);
+        ctx.fillRect(bx - 2, by - 2, bw + 4, bh + 4);
         ctx.restore();
       }
 
-      // Draw from top: shield 0 (blue), shield 1 (green), shield 2 (yellow), core (red)
-      for (let si = 0; si < e.shields.length; si++) {
+      // Background
+      ctx.fillStyle = 'rgba(0,0,0,0.6)';
+      ctx.fillRect(bx, by, bw, bh);
+
+      // Draw back-to-front: core first, then shields in reverse order
+      // Core: fraction of core HP
+      const coreFrac = e.hp / e.maxHp;
+      if (coreFrac > 0) {
+        ctx.fillStyle = '#ff4466';
+        ctx.fillRect(bx, by, bw * coreFrac, bh);
+      }
+      // Shields back-to-front (2→1→0)
+      for (let si = e.shields.length - 1; si >= 0; si--) {
         const sh = e.shields[si];
-        const ly = topY + si * (layerH + gap);
-        // Background
-        ctx.fillStyle = 'rgba(0,0,0,0.6)';
-        ctx.fillRect(bx, ly, bw, layerH);
-        // Fill
-        if (si < e.shieldIdx) {
-          // Already broken — show empty with dim ghost
-          ctx.fillStyle = 'rgba(80,80,80,0.3)';
-          ctx.fillRect(bx, ly, bw, layerH);
-        } else if (si === e.shieldIdx) {
-          // Active shield being damaged
+        if (sh.hp > 0) {
           const frac = sh.hp / sh.maxHp;
           ctx.fillStyle = sh.color;
-          ctx.fillRect(bx, ly, bw * frac, layerH);
-          // Shimmer on active shield
-          ctx.fillStyle = 'rgba(255,255,255,0.15)';
-          ctx.fillRect(bx, ly, bw * frac, layerH / 2);
-        } else {
-          // Full, not yet active
-          ctx.fillStyle = sh.color;
-          ctx.globalAlpha = 0.5;
-          ctx.fillRect(bx, ly, bw, layerH);
-          ctx.globalAlpha = 1.0;
+          ctx.fillRect(bx, by, bw * frac, bh);
         }
-        // Border
-        ctx.strokeStyle = si === e.shieldIdx ? sh.color : 'rgba(100,100,100,0.3)';
-        ctx.lineWidth = si === e.shieldIdx ? 1 : 0.5;
-        ctx.strokeRect(bx, ly, bw, layerH);
-        // Label
-        ctx.font = "bold 6px sans-serif";
-        ctx.fillStyle = si <= e.shieldIdx ? '#ffffff' : 'rgba(255,255,255,0.4)';
-        ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
-        ctx.fillText(sh.label, bx + 2, ly + layerH / 2);
       }
 
-      // Core HP bar (bottom layer)
-      const coreY = topY + e.shields.length * (layerH + gap);
-      ctx.fillStyle = 'rgba(0,0,0,0.6)';
-      ctx.fillRect(bx, coreY, bw, layerH);
-      const coreActive = e.shieldIdx >= e.shields.length;
-      const coreFrac = e.hp / e.maxHp;
-      if (coreActive) {
-        ctx.fillStyle = '#ff4466';
-        ctx.fillRect(bx, coreY, bw * coreFrac, layerH);
-        // Shimmer
-        ctx.fillStyle = 'rgba(255,255,255,0.15)';
-        ctx.fillRect(bx, coreY, bw * coreFrac, layerH / 2);
-      } else {
-        ctx.globalAlpha = 0.35;
-        ctx.fillStyle = '#ff4466';
-        ctx.fillRect(bx, coreY, bw * coreFrac, layerH);
-        ctx.globalAlpha = 1.0;
+      // Shimmer highlight on top half of the visible fill
+      const activeSh = e.shieldIdx < e.shields.length ? e.shields[e.shieldIdx] : null;
+      const topFrac = activeSh ? activeSh.hp / activeSh.maxHp : coreFrac;
+      if (topFrac > 0) {
+        ctx.fillStyle = 'rgba(255,255,255,0.12)';
+        ctx.fillRect(bx, by, bw * topFrac, bh / 2);
       }
-      ctx.strokeStyle = coreActive ? '#ff4466' : 'rgba(100,100,100,0.3)';
-      ctx.lineWidth = coreActive ? 1 : 0.5;
-      ctx.strokeRect(bx, coreY, bw, layerH);
-      ctx.font = "bold 6px sans-serif";
-      ctx.fillStyle = coreActive ? '#ffffff' : 'rgba(255,255,255,0.4)';
-      ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
-      ctx.fillText('CORE', bx + 2, coreY + layerH / 2);
 
-      // Phase attack timer indicator (arc around boss)
+      // Border color = active layer color
+      const activeColor = e.shieldIdx < e.shields.length
+        ? e.shields[e.shieldIdx].color
+        : '#ff4466';
+      ctx.strokeStyle = activeColor;
+      ctx.lineWidth = 0.8;
+      ctx.strokeRect(bx, by, bw, bh);
+
+      // Phase attack timer arc around boss
       if (e.shieldIdx < e.shields.length) {
         const timerFrac = e.phaseAttackTimer / e.phaseAttackInterval;
         const timerAngle = TAU * timerFrac;
         ctx.beginPath();
         ctx.arc(e.x, e.y, e.size + 6, -PI / 2, -PI / 2 + timerAngle);
-        ctx.strokeStyle = timerFrac > 0.75 ? `rgba(255,${Math.floor(80 * (1 - timerFrac))},50,${0.6 + timerFrac * 0.4})` : 'rgba(255,180,50,0.5)';
+        ctx.strokeStyle = timerFrac > 0.75
+          ? `rgba(255,${Math.floor(80 * (1 - timerFrac))},50,${0.6 + timerFrac * 0.4})`
+          : 'rgba(255,180,50,0.4)';
         ctx.lineWidth = 2;
         ctx.stroke();
       }
-
-      // Outer frame
-      ctx.strokeStyle = 'rgba(255,204,68,0.3)'; ctx.lineWidth = 0.5;
-      ctx.strokeRect(bx - 1, topY - 1, bw + 2, totalH + 2);
     } else if (e.isBoss) {
-      // Fallback boss bar (no shields left or data missing)
+      // Fallback boss bar (no shield data)
       const bw = e.size * 3;
-      const bh = 4;
-      const by = e.y - e.size - 12;
+      const bh = 5;
+      const by = e.y - e.size - 14;
       ctx.fillStyle = 'rgba(0,0,0,0.5)'; ctx.fillRect(e.x - bw / 2, by, bw, bh);
       ctx.fillStyle = '#ff4466'; ctx.fillRect(e.x - bw / 2, by, bw * (e.hp / e.maxHp), bh);
       ctx.strokeStyle = 'rgba(255,68,102,0.4)'; ctx.lineWidth = 0.5;
@@ -2001,23 +1975,12 @@ function renderEnemies() {
       ctx.fillStyle = '#ff4466'; ctx.fillRect(e.x - bw / 2, by, bw * (e.hp / e.maxHp), bh);
     }
 
-    // Boss label
+    // Boss label — just "BOSS", no phase text
     if (e.isBoss) {
-      const labelY = e.shields ? e.y - e.size - (e.shields.length + 1) * 5 - 18 : e.y - e.size - 18;
       ctx.font = "bold 10px 'Satoshi',sans-serif";
-      // Phase-aware label color
-      if (e.shields && e.shieldIdx < e.shields.length) {
-        ctx.fillStyle = e.shields[e.shieldIdx].color;
-      } else if (e.shields && e.shieldIdx >= e.shields.length) {
-        ctx.fillStyle = '#ff4466';
-      } else {
-        ctx.fillStyle = '#ffcc44';
-      }
+      ctx.fillStyle = '#ffcc44';
       ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
-      const phaseText = e.shields
-        ? (e.shieldIdx >= e.shields.length ? 'BOSS — CORE' : `BOSS — ${e.shields[e.shieldIdx].label}`)
-        : 'BOSS';
-      ctx.fillText(phaseText, e.x, labelY);
+      ctx.fillText('BOSS', e.x, e.y - e.size - 16);
     }
 
     // Jammer-resist indicator label
