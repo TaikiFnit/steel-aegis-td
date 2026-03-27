@@ -884,7 +884,7 @@ function update(dt) {
     };
     addShake(15);
     sfx('explode');
-    G.announce = { text: '✦ 大 破 ✦', timer: 2.5 };
+    G.announce = { text: '大 破', timer: 2.5, style: 'critical' };
     // Big initial explosion
     emitP(G.ship.x, G.ship.y, 150, {
       colors: ['#ff4444', '#ff8844', '#ffcc44', '#333', '#111'],
@@ -2915,13 +2915,27 @@ function renderAnnounce() {
   if (!G.announce) return;
   G.announce.timer -= 1 / 60;
   if (G.announce.timer <= 0) { G.announce = null; return; }
-  const progress = 1 - G.announce.timer / 2.5;
+  const dur = G.announce.style === 'critical' ? 2.5 : 2.5;
+  const progress = 1 - G.announce.timer / dur;
   const alpha = progress < 0.1 ? progress / 0.1 : progress > 0.8 ? (1 - progress) / 0.2 : 1;
   ctx.save(); ctx.globalAlpha = alpha;
-  ctx.font = "800 44px 'Cabinet Grotesk',sans-serif"; ctx.fillStyle = '#fff';
   ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-  ctx.shadowColor = 'rgba(0,0,0,0.5)'; ctx.shadowBlur = 20;
-  ctx.fillText(G.announce.text, CX, CY - 50);
+
+  if (G.announce.style === 'critical') {
+    // Heavy red treatment — same weight as SUNK
+    ctx.shadowColor = 'rgba(255,68,102,0.7)'; ctx.shadowBlur = 40;
+    ctx.font = "800 56px 'Cabinet Grotesk',sans-serif";
+    ctx.fillStyle = '#ff4466';
+    ctx.fillText(G.announce.text, CX, CY - 55);
+    // Secondary subtle outline pass for extra weight
+    ctx.shadowBlur = 0;
+    ctx.strokeStyle = 'rgba(255,68,102,0.3)'; ctx.lineWidth = 1.5;
+    ctx.strokeText(G.announce.text, CX, CY - 55);
+  } else {
+    ctx.font = "800 44px 'Cabinet Grotesk',sans-serif"; ctx.fillStyle = '#fff';
+    ctx.shadowColor = 'rgba(0,0,0,0.5)'; ctx.shadowBlur = 20;
+    ctx.fillText(G.announce.text, CX, CY - 50);
+  }
   ctx.restore();
 }
 
