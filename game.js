@@ -873,7 +873,7 @@ function update(dt) {
     G.phase = 'sinking';
     G.sink = {
       timer: 0,
-      duration: 6.0,        // total sinking time
+      duration: 7.0,        // total sinking time
       scale: 1.0,           // ship shrinks as it sinks (top-down)
       splitGap: 0,          // bow/stern separation (breaking apart)
       opacity: 1.0,
@@ -920,12 +920,12 @@ function update(dt) {
 
     // Ship shrinks — sinking below the surface from top-down view
     if (sk.timer > 1.5) {
-      sk.scale = Math.max(0.15, 1.0 - (sk.timer - 1.5) * 0.19);
+      sk.scale = Math.max(0.15, 1.0 - (sk.timer - 1.5) * 0.155);
     }
 
     // Water covers the ship — expanding dark circle
     if (sk.timer > 1.0) {
-      sk.waterRadius = Math.min((sk.timer - 1.0) * 22, 85);
+      sk.waterRadius = Math.min((sk.timer - 1.0) * 17, 85);
     }
 
     // Opacity — fade gently at the end, keep visible for gameover bg
