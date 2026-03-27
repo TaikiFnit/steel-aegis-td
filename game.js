@@ -885,7 +885,7 @@ function update(dt) {
     };
     addShake(15);
     sfx('explode');
-    G.announce = { text: '大 破', timer: 2.5, style: 'critical' };
+    // No text announce — the visual explosion speaks for itself
     // Big initial explosion — centered on ship
     emitP(G.ship.x, G.ship.y, 150, {
       colors: ['#ff4444', '#ff8844', '#ffcc44', '#333', '#111'],
